@@ -138,7 +138,7 @@ app.get('/news', async (req, res) => {
           allNews.push({
             title: title.trim(),
             url: link.trim(),
-            source: new URL(link).hostname.replace('www.', ''),
+            source: (() => { try { return new URL(link).hostname.replace('www.', ''); } catch(e) { return 'Haber'; } })(),
             datetime: pubDate ? new Date(pubDate).getTime() / 1000 : Date.now() / 1000,
           });
         }
