@@ -105,6 +105,53 @@ app.get('/prices', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+const http = require('http');
+
+app.get('/news', async (req, res) => {
+  try {
+    const feeds = [
+      'https://www.bloomberght.com/rss',
+      'https://www.ekonomim.com/rss',
+      'https://www.haberturk.com/rss/ekonomi.xml',
+    ];
+
+    const fetchFeed = (url) => new Promise((resolve) => {
+      const lib = url.startsWith('https') ? https : http;
+      lib.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (response) => {
+        const chunks = [];
+        response.on('data', chunk => chunks.push(chunk));
+        response.on('end', () => resolve(Buffer.concat(chunks).toString()));
+      }).on('error', () => resolve(''));
+    });
+
+    const results = await Promise.all(feeds.map(fetchFeed));
+    const allNews = [];
+
+    results.forEach(xml => {
+      if (!xml) return;
+      const items = xml.match(/<item>([\s\S]*?)<\/item>/g) || [];
+      items.slice(0, 10).forEach(item => {
+        const title = (item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || item.match(/<title>(.*?)<\/title>/))?.[1] || '';
+        const link = (item.match(/<link>(.*?)<\/link>/) || [])[1] || '';
+        const pubDate = (item.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || '';
+        if (title && link) {
+          allNews.push({
+            title: title.trim(),
+            url: link.trim(),
+            source: new URL(link).hostname.replace('www.', ''),
+            datetime: pubDate ? new Date(pubDate).getTime() / 1000 : Date.now() / 1000,
+          });
+        }
+      });
+    });
+
+    allNews.sort((a, b) => b.datetime - a.datetime);
+    res.json(allNews.slice(0, 30));
+  } catch (e) {
+    console.log('News error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
