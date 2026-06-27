@@ -134,13 +134,16 @@ app.get('/news', async (req, res) => {
         const title = (item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || item.match(/<title>(.*?)<\/title>/))?.[1] || '';
         const linkRaw = (item.match(/<link>(.*?)<\/link>/) || item.match(/<link><!\[CDATA\[(.*?)\]\]><\/link>/) || [])[1] || '';
 const link = linkRaw.replace(/<!\[CDATA\[|\]\]>/g, '').trim();
-        const pubDate = (item.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || '';
+        const pubDateRaw = (item.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || '';
+const pubDate = pubDateRaw.replace(/<!\[CDATA\[|\]\]>/g, '').trim();
+const parsedDate = new Date(pubDate);
+const datetime = !isNaN(parsedDate.getTime()) ? parsedDate.getTime() / 1000 : Date.now() / 1000;
         if (title && link) {
           allNews.push({
             title: title.trim(),
             url: link.trim(),
             source: (() => { try { return new URL(link).hostname.replace('www.', ''); } catch(e) { return 'Haber'; } })(),
-            datetime: pubDate ? new Date(pubDate).getTime() / 1000 : Date.now() / 1000,
+            datetime: pubDate ? (new Date(pubDate).getTime() / 1000 || Date.now() / 1000) : Date.now() / 1000,
           });
         }
       });
