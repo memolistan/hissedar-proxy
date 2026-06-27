@@ -132,7 +132,8 @@ app.get('/news', async (req, res) => {
       const items = xml.match(/<item>([\s\S]*?)<\/item>/g) || [];
       items.slice(0, 10).forEach(item => {
         const title = (item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || item.match(/<title>(.*?)<\/title>/))?.[1] || '';
-        const link = (item.match(/<link>(.*?)<\/link>/) || [])[1] || '';
+        const linkRaw = (item.match(/<link>(.*?)<\/link>/) || item.match(/<link><!\[CDATA\[(.*?)\]\]><\/link>/) || [])[1] || '';
+const link = linkRaw.replace(/<!\[CDATA\[|\]\]>/g, '').trim();
         const pubDate = (item.match(/<pubDate>(.*?)<\/pubDate>/) || [])[1] || '';
         if (title && link) {
           allNews.push({
